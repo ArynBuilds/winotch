@@ -1,0 +1,108 @@
+name: Release
+
+# Builds the Windows installers and publishes them in a GitHub release.
+#
+# - Run it by hand (Actions → Release → Run workflow) to get the installers as artifacts, without publishing.
+# - Push a `v*` tag (for example v0.5.0) to publish them.
+#
+# The installers are not code-signed: Windows SmartScreen warns the first time (README, Install).
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Cache cargo
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: release-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: release-cargo-
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Three files carry the version and they drift silently: a "0.5.1" that
+      # installs a 0.5.0 is the kind of thing nobody notices until a bug report.
+      - name: Check the tag and every version agree
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tag   = "${{ github.ref_name }}" -replace '^v', ''
+          $conf  = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          $pkg   = (Get-Content package.json | ConvertFrom-Json).version
+          $cargo = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"(.+)"').Matches[0].Groups[1].Value
+          "tag=$tag tauri.conf=$conf package.json=$pkg Cargo.toml=$cargo"
+          $bad = @()
+          if ($tag -ne $conf)  { $bad += "tauri.conf.json says $conf" }
+          if ($tag -ne $pkg)   { $bad += "package.json says $pkg" }
+          if ($tag -ne $cargo) { $bad += "Cargo.toml says $cargo" }
+          if ($bad) { throw "tag says $tag but $($bad -join '; ')" }
+
+      - name: Tests
+        run: |
+          cargo build --release -p winotch-hook --locked
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm test
+
+      # `npm run build` (tauri's beforeBuildCommand) builds winotch-hook first,
+      # which tauri.conf.json bundles as a resource. `pack` copies the
+      # installers out of target/ under the names they ship with.
+      - name: Build and pack the installers
+        id: pack
+        shell: pwsh
+        run: |
+          npm run pack
+          $version = (Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Get-ChildItem release | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: winotch-${{ steps.pack.outputs.version }}
+          path: |
+            release/winotch-setup.exe
+            release/winotch.msi
+          retention-days: 7
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = "${{ steps.pack.outputs.version }}"
+          $notes = @"
+          Download ``winotch-setup.exe`` (installs for you only, no admin prompt) or ``winotch.msi`` and run it.
+
+          The installers are not code-signed yet, so Windows SmartScreen shows a warning the first time: click **More info → Run anyway**.
+
+          After the launch, **Get started** opens in the island: connect Claude Code there.
+          "@
+          # The same names every time, so releases/latest/download/winotch-setup.exe
+          # (the README's link) always gives the newest.
+          gh release create "${{ github.ref_name }}" `
+            "release/winotch-setup.exe" `
+            "release/winotch.msi" `
+            --title "winotch $v" `
+            --notes $notes

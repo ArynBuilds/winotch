@@ -1,0 +1,65 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please do not report security vulnerabilities here; see SECURITY.md.
+        winotch.log never holds your mail or prompts, but remove email addresses, tokens and project names before pasting it.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - The island (opening, folding, the mark)
+        - Claude Code sessions (hooks, approvals, questions)
+        - Chat with Claude Code
+        - Tools for Claude Code (MCP)
+        - Notifications and the local API
+        - GitHub
+        - Gmail
+        - Spotify, Notion or Stripe
+        - Today (to-dos, notes, reminders)
+        - Dictation, Notetaker or « OK Tent »
+        - Settings
+        - Install, update or uninstall
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the island ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: The number at the bottom of the Settings sidebar, or a commit SHA if you built it.
+      placeholder: 0.5.0 or a commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Windows version and build, display setup (scaling, monitors), Claude Code version (`claude --version`), and how you installed winotch (setup.exe, .msi, from source).
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log
+      description: The end of `%LOCALAPPDATA%\winotch\winotch.log` around the time it happened.
+      render: text
