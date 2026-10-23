@@ -1,0 +1,36 @@
+// Small append-only log at %LOCALAPPDATA%\winotch\winotch.log (Windows) or
+// ~/.local/share/winotch/winotch.log (Linux) — the equivalent of nbLog() in
+// HookServer.swift. Nothing leaves the machine.
+
+use std::io::Write;
+
+use crate::{platform, settings};
+
+pub fn line(message: impl AsRef<str>) {
+    let t = platform::local_time();
+    // Milliseconds too: the steps of a dictation are a few hundred apart.
+    let ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.subsec_millis());
+    let stamp = format!(
+        "{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{ms:03}",
+        t.year, t.month, t.day, t.hour, t.minute, t.second
+    );
+    let dir = settings::local_dir();
+    if platform::ensure_private_dir(&dir).is_err() {
+        return;
+    }
+    let path = dir.join("winotch.log");
+    // Keep it from growing forever: start fresh past ~1 MB.
+    if std::fs::metadata(&path).map(|m| m.len() > 1_000_000).unwrap_or(false) {
+        let _ = std::fs::remove_file(&path);
+    }
+    let mut options = std::fs::OpenOptions::new();
+    options.create(true).append(true);
+    // Readable by us only, like the macOS log.
+    #[cfg(unix)]
+    std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
+    if let Ok(mut file) = options.open(path) {
+        let _ = writeln!(file, "{stamp} {}", message.as_ref());
+    }
+}

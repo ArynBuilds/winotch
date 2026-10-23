@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>winotch — eye preview</title>
+    <style>
+      html, body { overflow: auto !important; height: auto !important; }
+      body { margin: 0; padding: 16px; background: #0b0b0b; font: 12px system-ui; color: #9a9a9a; }
+      #root { display: grid; grid-template-columns: repeat(4, 220px); gap: 10px; }
+      figure { margin: 0; text-align: center; }
+      canvas { display: block; border-radius: 10px; margin-bottom: 4px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./eye-preview.ts"></script>
+  </body>
+</html>

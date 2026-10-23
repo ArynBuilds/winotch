@@ -1,0 +1,31 @@
+{
+  "name": "winotch",
+  "private": true,
+  "version": "0.5.0",
+  "description": "A Dynamic Island for Windows, built on Claude Code",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ArynBuilds/winotch.git"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "node --import ./tests/setup.mjs --test \"tests/**/*.test.mjs\"",
+    "icons": "node scripts/gen-icons.mjs",
+    "tauri": "tauri",
+    "predev": "cargo build --release -p winotch-hook",
+    "prebuild": "cargo build --release -p winotch-hook",
+    "pack": "tauri build && node scripts/pack.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "typescript": "^5.6.0",
+    "vite": "^6"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2"
+  }
+}

@@ -1,0 +1,452 @@
+[
+  {
+    "name": "winotch_notifications",
+    "description": "Read the notifications every app sent to winotch, newest first: mail, GitHub, your own apps and more. Each has an id, its app, title, body, time (ms), whether it was read, its actions, and `acted`: the action the user pressed, if any.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "app": {
+          "type": "string",
+          "description": "Only this app's (its id, as winotch_apps lists it)."
+        },
+        "unread_only": {
+          "type": "boolean",
+          "description": "Only what the user has not read."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300,
+          "description": "At most this many (default 50)."
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_apps",
+    "description": "The apps connected to winotch: id, name, sign, and what their pill says now.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "winotch_notify",
+    "description": "Show the user a notification in winotch, from Claude Code. Use it for something that needs their eye, or for a draft waiting for their decision: give it actions (for example approve / reject), then read winotch_notifications later; its `acted` field tells which one they pressed. Never treat a draft as approved until `acted` says so.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "One line, at most 200 characters."
+        },
+        "body": {
+          "type": "string",
+          "description": "A few lines of detail, at most 2000 characters."
+        },
+        "importance": {
+          "type": "string",
+          "enum": [
+            "low",
+            "normal",
+            "high"
+          ],
+          "description": "high opens the island; normal peeks it; low waits behind the bell."
+        },
+        "url": {
+          "type": "string",
+          "description": "Opened when the user clicks the notification."
+        },
+        "actions": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "label"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string",
+                "description": "At most 24 characters."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_mark_read",
+    "description": "Mark notifications read: one (id), one app's (app), or all of them (neither).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "app": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_mail_accounts",
+    "description": "The Gmail accounts connected to winotch: email, label, status (connecting, ok, error), error and unread count. Use an account's email as `account` in the other mail tools.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "winotch_mail_search",
+    "description": "Search the user's Gmail with Gmail's own search syntax (from:ana is:unread newer_than:7d, subject:invoice, has:attachment…), across all mail, not only the inbox. Returns the newest matches: id, thread, account, from, subject, date (ms), unread, snippet, url. Read-only: nothing is marked read.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "query"
+      ],
+      "properties": {
+        "account": {
+          "type": "string",
+          "description": "One account's email; every account when left out."
+        },
+        "query": {
+          "type": "string",
+          "description": "A Gmail search, as typed in Gmail's search box."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "description": "At most this many (default 20)."
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_mail_read",
+    "description": "Read one Gmail message in full (or its whole thread): headers (from, to, cc, date, subject, message id), the plain-text body (HTML mail converted to text) and the attachments' names. Read-only: it is not marked read.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "account",
+        "id"
+      ],
+      "properties": {
+        "account": {
+          "type": "string",
+          "description": "The account's email."
+        },
+        "id": {
+          "type": "string",
+          "description": "The message's id, as winotch_mail_search returns it."
+        },
+        "thread": {
+          "type": "boolean",
+          "description": "The whole conversation, oldest first (at most its newest 25 mails)."
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_mail_draft",
+    "description": "Save a draft in the user's Gmail (its Drafts folder) and show it on the winotch island with Send, Open in Gmail and Discard. This NEVER sends: only the user sends, by pressing Send on the island (or from Gmail). Give reply_to to answer a mail: the draft is threaded under it, its subject gets \"Re:\", and `to` defaults to the original sender. Read winotch_notifications (app gmail) later; `acted` says whether the user sent or discarded it.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "account",
+        "subject",
+        "body"
+      ],
+      "properties": {
+        "account": {
+          "type": "string",
+          "description": "The account it is from (its email)."
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Addresses (\"Name <a@b.com>\" or a@b.com). May be left out when replying."
+        },
+        "cc": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "subject": {
+          "type": "string",
+          "description": "When replying, may be empty: the original's, with \"Re:\"."
+        },
+        "body": {
+          "type": "string",
+          "description": "Plain text."
+        },
+        "reply_to": {
+          "type": "string",
+          "description": "The id of the mail this answers, as winotch_mail_search returns it."
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_today_list",
+    "description": "The user's to-dos in winotch's Today app for a range of days (by default today and the 7 days after), plus what is overdue (not done, from before the range) and someday's (no date). Also returns `today` (YYYY-MM-DD), `weekday` and `now` (HH:MM) on the user's clock: use them to turn \"tomorrow\", \"friday\" or \"in 3 days\" into a date yourself before calling winotch_today_add or winotch_today_update. Each to-do: id, title, note, date (YYYY-MM-DD; absent: someday), time (HH:MM, 24 h), done, doneAt and created (ms).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "First day, YYYY-MM-DD (default: today)."
+        },
+        "to": {
+          "type": "string",
+          "description": "Last day, YYYY-MM-DD, included (default: 7 days after from)."
+        },
+        "done": {
+          "type": "boolean",
+          "description": "Only done (true) or only open (false) to-dos; both when left out."
+        },
+        "all": {
+          "type": "boolean",
+          "description": "Every to-do there is, any day, done or not (from and to are ignored)."
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_today_add",
+    "description": "Add a to-do to the user's Today; it shows on the island at once. Give `date` as YYYY-MM-DD, worked out from `today` (winotch_today_list) when the user says \"tomorrow\" or a weekday; leave it out for someday. With `time` (HH:MM, 24 h) the island reminds the user then, with a Done button. A time needs a date.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "One line, at most 200 characters."
+        },
+        "date": {
+          "type": "string",
+          "description": "YYYY-MM-DD. Left out: someday."
+        },
+        "time": {
+          "type": "string",
+          "description": "HH:MM, 24-hour (\"15:00\"): a reminder then."
+        },
+        "note": {
+          "type": "string",
+          "description": "Details, at most 20000 characters."
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_today_update",
+    "description": "Change a to-do: rename it, move it to another day or time, change its note, tick it off (done: true) or reopen it (done: false). Only the fields given change; null clears note, date or time (clearing the date clears the time too). Dates YYYY-MM-DD, times HH:MM.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The to-do's id (\"t12\"), as winotch_today_list returns it."
+        },
+        "title": {
+          "type": "string"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "YYYY-MM-DD, or null for someday."
+        },
+        "time": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "HH:MM, or null for no time (and no reminder)."
+        },
+        "done": {
+          "type": "boolean"
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_today_delete",
+    "description": "Delete a to-do for good, its reminder with it. When it was done, prefer winotch_today_update with done: true.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_notes_list",
+    "description": "The user's notes in winotch's Today app, the one edited last first: id, title, updated (ms), chars and a preview. With `query`, it searches: only the notes whose title or text has every word of it, each with a snippet. Read one whole with winotch_notes_read.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Words to search for, any case; every one must be in the note."
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_notes_read",
+    "description": "Read one note whole: id, title, body (plain text), updated and created (ms).",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The note's id (\"n3\")."
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_notes_write",
+    "description": "Write a note in the user's Today: without `id` a new one; with `id` it replaces that note's title and/or body (only the fields given). Plain text, the body at most 20000 characters. To add to a note without rewriting it, use winotch_notes_append.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The note to replace; left out: a new note."
+        },
+        "title": {
+          "type": "string",
+          "description": "One line, at most 200 characters. A new note without one is titled by its first line."
+        },
+        "body": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_notes_append",
+    "description": "Add text at the end of a note, on a new line, leaving what is there as it is.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "id",
+        "text"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_notes_delete",
+    "description": "Delete a note for good.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_sessions",
+    "description": "The user's Claude Code sessions on this computer, the newest first: id, folder (the project's folder name), title, cwd, updated (ms since 1970) and whether it is open in a terminal now. With `folder`, only that folder's (its name, any case: \"my-app\" or \"My-App\"). Use it to find the one to open: \"my last my-app session\" is the first one of folder my-app.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "folder": {
+          "type": "string",
+          "description": "Only the sessions of this folder (its name)."
+        },
+        "limit": {
+          "type": "number",
+          "description": "How many, 1 to 30 (10 by default)."
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_open_session",
+    "description": "Open one of the user's Claude Code sessions (its id, from winotch_sessions): in the island's chat (`in`: \"chat\", the default: the chat shows it, once this answer is done) or its terminal brought to the front (`in`: \"terminal\"; VS Code on its folder when it has none). Say in a few words what you opened.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The session's id, as winotch_sessions lists it."
+        },
+        "in": {
+          "type": "string",
+          "enum": [
+            "chat",
+            "terminal"
+          ],
+          "description": "Where: the island's chat (default) or its terminal."
+        }
+      }
+    }
+  },
+  {
+    "name": "winotch_open_folder",
+    "description": "Show a folder in File Explorer, by its full path (a session's cwd, for one). Never a file.",
+    "inputSchema": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      }
+    }
+  }
+]

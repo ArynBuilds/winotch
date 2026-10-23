@@ -1,0 +1,1308 @@
+/* The hub: an OLED-black sidebar, a dark panel holding the pages,
+   and on top of each page a band where the page's mark stands. Laid out
+   like the Mac's Coucou window (FlowHub.swift). */
+
+:root {
+  --hub-panel: #0e0f11;
+  --hub-card: #18191c;
+  --hub-field: #1f2024;
+  --hub-line: rgba(255, 255, 255, 0.07);
+  --hub-text: #f5f6f8;
+  --hub-body: #e1e3e6;
+  /* winotch: readable on the cards (about 60 % and 50 % white, as Apple's
+     dark mode does); Coucou's #8e939c / #6b7079 were too faint to read. */
+  --hub-secondary: #a3a7af;
+  --hub-muted: #8d929b;
+  --hub-accent: #ececec;
+  --hub-on-accent: #170c04;
+  --hub-green: #ececec;
+  --hub-red: #ececec;
+}
+
+body.hub-window {
+  background: #000;
+  color: var(--hub-text);
+  font: 400 13px/1.45 var(--font);
+  -webkit-font-smoothing: antialiased;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#hub {
+  display: flex;
+  height: 100vh;
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+
+.hub-side {
+  width: 228px;
+  flex: 0 0 228px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 18px 12px 12px;
+  overflow-y: auto;
+}
+
+.hub-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 14px;
+  font: 700 18px var(--font);
+}
+
+.hub-brand canvas {
+  width: 28px;
+  height: 28px;
+}
+
+.hub-group {
+  font: 700 10.5px var(--font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hub-muted);
+  padding: 12px 10px 6px;
+}
+
+.hub-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 9px;
+  background: transparent;
+  color: #c7cad0;
+  font: 500 13.5px var(--font);
+  text-align: start;
+}
+
+.hub-item svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+}
+
+.hub-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  transform: none;
+}
+
+.hub-item:active:not(:disabled) {
+  transform: none;
+}
+
+.hub-item.on {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--hub-text);
+  font-weight: 600;
+}
+
+.hub-side .spacer {
+  flex: 1 1 auto;
+  min-height: 12px;
+}
+
+.hub-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--hub-secondary);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.hub-status .dot {
+  width: 7px;
+  height: 7px;
+}
+
+.hub-version {
+  color: var(--hub-muted);
+  font-size: 11px;
+  padding: 8px 12px 0;
+}
+
+.hub-version b {
+  font-weight: 700;
+}
+
+/* ── Panel ────────────────────────────────────────────────────────────────── */
+
+.hub-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 12px 12px 12px 0;
+  border-radius: 22px;
+  background: var(--hub-panel);
+  border: 1px solid var(--hub-line);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.hub-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 24px 28px 28px;
+}
+
+.hub-page {
+  max-width: 980px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* The notch's pages keep their sections as they ship, at the panel's width. */
+.hub-page #settings-root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Hero band ────────────────────────────────────────────────────────────── */
+
+.hub-hero {
+  position: relative;
+  height: 170px;
+  border-radius: 18px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 1px solid var(--hero-line, rgba(255, 255, 255, 0.1));
+}
+
+.hub-hero.compact {
+  height: 116px;
+}
+
+.hub-hero canvas.backdrop,
+.hub-hero canvas.troupe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hub-hero .copy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 26px;
+  max-width: calc(100% - 340px);
+  height: 100%;
+  pointer-events: none;
+}
+
+.hub-hero.compact .copy {
+  padding: 20px;
+}
+
+.hub-hero .copy > * {
+  pointer-events: auto;
+}
+
+.hub-hero h1 {
+  font: 700 30px var(--font);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.hub-hero.compact h1 {
+  font-size: 24px;
+}
+
+.hub-hero p {
+  font-size: 14px;
+  color: #b7bbc2;
+  max-width: 420px;
+}
+
+.hub-hero .actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Cards, rows and controls of the Flow pages ───────────────────────────── */
+
+.hub-label {
+  font: 700 11px var(--font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hub-muted);
+  padding: 4px 2px 0;
+}
+
+.hub-card {
+  background: var(--hub-card);
+  border: 1px solid var(--hub-line);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hub-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 30px;
+}
+
+.hub-row .text {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.hub-row .title {
+  font: 600 13.5px var(--font);
+}
+
+.hub-row .detail,
+.hub-note {
+  font-size: 12px;
+  color: var(--hub-secondary);
+}
+
+.hub-divider {
+  height: 1px;
+  background: var(--hub-line);
+  margin: 0 -2px;
+}
+
+.hub-keycap {
+  font: 600 12.5px var(--font);
+  padding: 0 10px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+button.hub-btn {
+  border-radius: 10px;
+  padding: 8px 14px;
+  font: 600 12.5px var(--font);
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--hub-text);
+}
+
+button.hub-btn.primary {
+  background: var(--hub-accent);
+  color: var(--hub-on-accent);
+}
+
+button.hub-btn.primary:hover:not(:disabled) {
+  background: #ececec;
+}
+
+button.hub-btn.danger {
+  background: rgba(236, 236, 236, 0.14);
+  color: #ececec;
+}
+
+button.hub-btn.small {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+button.hub-icon {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: #c7cad0;
+}
+
+button.hub-icon svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hub-input,
+.hub-select,
+.hub-textarea {
+  font: 400 13px var(--font);
+  color: var(--hub-text);
+  background: var(--hub-field);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  padding: 7px 10px;
+  outline: none;
+}
+
+.hub-input:focus,
+.hub-textarea:focus,
+.hub-select:focus {
+  border-color: rgba(236, 236, 236, 0.6);
+}
+
+.hub-textarea {
+  resize: vertical;
+  min-height: 80px;
+  width: 100%;
+}
+
+.hub-segmented {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06);
+  gap: 2px;
+}
+
+.hub-segmented button {
+  border-radius: 7px;
+  padding: 5px 14px;
+  background: transparent;
+  color: #c7cad0;
+  font: 500 12.5px var(--font);
+}
+
+.hub-segmented button.on {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--hub-text);
+}
+
+.hub-radio {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  border-radius: 50%;
+  border: 1.5px solid #5a5f68;
+}
+
+.hub-radio.on {
+  border: 5px solid var(--hub-accent);
+}
+
+.hub-progress {
+  width: 120px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.hub-progress > i {
+  display: block;
+  height: 100%;
+  background: var(--hub-accent);
+  border-radius: 3px;
+}
+
+.hub-ok {
+  color: var(--hub-green);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hub-warn {
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(236, 236, 236, 0.1);
+  border: 1px solid rgba(236, 236, 236, 0.22);
+  color: #ececec;
+  font-size: 12.5px;
+}
+
+/* ── Dictation page ───────────────────────────────────────────────────────── */
+
+.hub-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 20px;
+  align-items: start;
+}
+
+.hub-history-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hub-history-head .hub-input {
+  margin-inline-start: auto;
+  width: 210px;
+}
+
+.hub-day {
+  font: 600 12.5px var(--font);
+  color: var(--hub-secondary);
+  padding: 6px 2px 0;
+}
+
+.hub-entries {
+  background: var(--hub-card);
+  border: 1px solid var(--hub-line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.hub-entry {
+  display: flex;
+  gap: 18px;
+  padding: 16px 18px;
+  border-top: 1px solid var(--hub-line);
+}
+
+.hub-entry:first-child {
+  border-top: 0;
+}
+
+.hub-entry .when {
+  width: 70px;
+  flex: 0 0 70px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--hub-muted);
+  font-size: 12px;
+}
+
+.hub-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--hub-secondary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.hub-entry .words {
+  flex: 1 1 auto;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--hub-body);
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.hub-entry .tools {
+  display: flex;
+  gap: 6px;
+  align-self: flex-start;
+  opacity: 0.55;
+}
+
+.hub-entry:hover .tools {
+  opacity: 1;
+}
+
+.hub-big-number {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.hub-big-number b {
+  font: 700 32px var(--font);
+  letter-spacing: -0.02em;
+}
+
+.hub-big-number span {
+  color: var(--hub-secondary);
+  font-size: 13px;
+}
+
+/* A card in a colour: the band's black and particles. */
+.hub-glow {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--glow-line, rgba(255, 255, 255, 0.1));
+}
+
+.hub-glow canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hub-glow .inner {
+  position: relative;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hub-link {
+  background: none;
+  padding: 0;
+  color: var(--hub-accent);
+  font: 600 13px var(--font);
+  align-self: flex-start;
+}
+
+.hub-link:hover:not(:disabled) {
+  background: none;
+  text-decoration: underline;
+}
+
+.hub-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 26px 20px;
+  color: var(--hub-secondary);
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.hub-empty canvas {
+  width: 64px;
+  height: 64px;
+}
+
+/* ── Statistics ───────────────────────────────────────────────────────────── */
+
+.hub-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hub-stat {
+  background: var(--hub-card);
+  border: 1px solid var(--hub-line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hub-stat .label {
+  color: var(--hub-secondary);
+  font-size: 12.5px;
+}
+
+.hub-stat b {
+  font: 700 28px var(--font);
+  letter-spacing: -0.02em;
+}
+
+.hub-stat .sub {
+  color: var(--hub-muted);
+  font-size: 12px;
+}
+
+.hub-chart-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.hub-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 180px;
+  border-bottom: 1px dashed rgba(236, 236, 236, 0.35);
+}
+
+.hub-bars i {
+  flex: 1 1 0;
+  border-radius: 4px 4px 1px 1px;
+  background: var(--hub-accent);
+  min-height: 0;
+}
+
+.hub-bars i.zero {
+  background: transparent;
+}
+
+.hub-axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--hub-muted);
+  font-size: 11px;
+}
+
+.hub-app-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hub-app-bar .top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.hub-app-bar .top span {
+  color: var(--hub-secondary);
+}
+
+.hub-app-bar .track {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.hub-app-bar .track i {
+  display: block;
+  height: 100%;
+  background: var(--hub-accent);
+  border-radius: 3px;
+}
+
+/* ── Dictionary, snippets and styles ──────────────────────────────────────── */
+
+.hub-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hub-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 13px;
+}
+
+.hub-chip button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--hub-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hub-chip button svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.hub-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.hub-pair .arrow {
+  color: var(--hub-muted);
+  text-align: center;
+}
+
+.hub-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--hub-line);
+}
+
+.hub-list-row:first-child {
+  border-top: 0;
+}
+
+.hub-list-row .grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hub-snippet-text {
+  color: var(--hub-secondary);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.dimmed {
+  opacity: 0.5;
+}
+
+/* ── Notetaker ────────────────────────────────────────────────────────────── */
+
+.hub-notes {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 420px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--hub-line);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.hub-notes-list {
+  border-inline-end: 1px solid var(--hub-line);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hub-note-item {
+  text-align: start;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--hub-text);
+}
+
+.hub-note-item.on {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hub-note-item .t {
+  font: 600 13.5px var(--font);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-note-item .m {
+  color: var(--hub-muted);
+  font-size: 12px;
+}
+
+.hub-note-detail {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.hub-note-detail h2 {
+  font: 700 22px var(--font);
+  letter-spacing: -0.01em;
+}
+
+.hub-speakers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hub-speaker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+  color: var(--hub-text);
+}
+
+.hub-speaker .av {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 11px var(--font);
+  color: #0b0c0e;
+}
+
+.hub-line {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  padding: 6px 0;
+}
+
+.hub-line .ts {
+  color: var(--hub-muted);
+  font-size: 12px;
+  padding-top: 2px;
+}
+
+.hub-line .who {
+  font: 600 12.5px var(--font);
+}
+
+.hub-line .said {
+  font-size: 14px;
+  color: var(--hub-body);
+  line-height: 1.5;
+}
+
+.hub-todo {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13.5px;
+}
+
+.hub-todo input {
+  margin-top: 3px;
+  accent-color: var(--hub-accent);
+}
+
+.hub-todo .who {
+  color: var(--hub-secondary);
+  font-size: 12px;
+}
+
+.hub-rec {
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hub-red);
+  box-shadow: 0 0 6px rgba(236, 236, 236, 0.7);
+}
+
+@media (max-width: 1000px) {
+  .hub-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hub-stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hub-chart-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hub-hero .copy {
+    max-width: 100%;
+  }
+}
+
+.hub-note-detail > button {
+  align-self: flex-start;
+}
+
+/* ── winotch: pages without a banner, settings in Apple-style groups ────────── */
+
+/* Pages are a centred column: on a wide window the space is shared on both
+   sides instead of piling up on the right. */
+.hub-page {
+  margin: 0 auto;
+}
+
+.hub-page.narrow {
+  max-width: 720px;
+}
+
+.hub-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  margin: 2px 2px 4px;
+}
+
+.hub-head h1 {
+  flex: 1 1 auto;
+  margin: 0;
+  font: 700 24px var(--font);
+  letter-spacing: -0.01em;
+}
+
+.hub-section {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.hub-section > .caption {
+  font: 600 12.5px var(--font);
+  color: var(--hub-secondary);
+  padding: 0 4px;
+}
+
+.hub-section > .hub-card {
+  padding: 2px 16px;
+  gap: 0;
+}
+
+.hub-section > .hub-card > .hub-row {
+  min-height: 46px;
+  padding: 7px 0;
+}
+
+.hub-section > .hub-card > .hub-divider {
+  margin: 0;
+}
+
+.hub-section > .foot {
+  font-size: 12px;
+  color: var(--hub-secondary);
+  padding: 0 4px;
+}
+
+/* A setting that needs something set up elsewhere: one line and a way there. */
+.hub-section .hub-row.needs .title {
+  font-weight: 500;
+  color: var(--hub-secondary);
+}
+
+.hub-page-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.hub-page-body.narrow {
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.hub-history {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hub-snippet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+}
+
+.hub-section .hub-chips:not(:empty),
+.hub-section .hub-list-row {
+  padding: 10px 0;
+}
+
+/* Rows inside a row list (the styles per app) keep the group's rhythm. */
+.hub-style-list > .hub-row {
+  min-height: 40px;
+  padding-left: 12px;
+}
+
+.hub-status .dot {
+  background: var(--hub-text);
+}
+
+/* The sidebar's first group has no title: a little air instead. */
+.hub-group:empty {
+  height: 4px;
+  padding: 0;
+}
+
+/* An "on" switch was a white knob on a light track: barely told from "off". */
+.switch.on::after {
+  background: #141414;
+}
+
+.hub-review:empty {
+  display: none;
+}
+
+/* …and so does the line above it, or the card ends on a rule. */
+.hub-card > .hub-divider:has(+ .hub-review:empty) {
+  display: none;
+}
+
+.hub-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 0 12px;
+}
+
+.hub-diff {
+  font: 400 11.5px/1.5 var(--mono);
+  background: #08090b;
+  border: 1px solid var(--hub-line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre;
+  user-select: text;
+}
+
+.hub-diff .ctx {
+  color: var(--hub-muted);
+}
+
+.hub-code {
+  display: block;
+  font: 400 11.5px/1.5 var(--mono);
+  color: var(--hub-secondary);
+  padding: 2px 0 12px;
+  word-break: break-all;
+  user-select: all;
+}
+
+.hub-key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hub-key .hub-input {
+  width: 230px;
+}
+
+.hub-range {
+  width: 180px;
+  accent-color: var(--hub-text);
+}
+
+button.hub-keycap.button {
+  cursor: pointer;
+  border: 0;
+  color: var(--hub-text);
+}
+
+button.hub-keycap.button.recording {
+  outline: 1px solid var(--hub-text);
+}
+
+.hub-row.off .title,
+button.hub-keycap.button:disabled {
+  color: var(--hub-muted);
+}
+
+/* ── Apps: one row each, its details under it when opened ─────────────────── */
+
+.hub-app {
+  cursor: pointer;
+}
+
+.hub-app-logo {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.hub-chevron svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--hub-muted);
+  stroke-width: 2;
+  transition: transform 0.18s;
+}
+
+.hub-app-block.open .hub-chevron svg {
+  transform: rotate(90deg);
+}
+
+.hub-app-details {
+  display: none;
+  padding: 0 0 8px 42px;
+}
+
+.hub-app-block.open .hub-app-details {
+  display: block;
+}
+
+.hub-app-details > .hub-row {
+  min-height: 40px;
+}
+
+/* A long command breaks anywhere: without stretching it shrinks to one letter. */
+.hub-code {
+  align-self: stretch;
+}
+
+.hub-app-block > .hub-row {
+  min-height: 46px;
+  padding: 7px 0;
+}
+
+.hub-status:empty {
+  display: none;
+}
+
+/* ── Gmail's accounts, inside its row on the Apps page ───────────────────── */
+
+.hub-account {
+  border-top: 1px solid var(--hub-line);
+}
+
+.hub-account:first-child {
+  border-top: 0;
+}
+
+.hub-account.error .hub-row:first-child .detail {
+  color: var(--hub-text);
+}
+
+.hub-account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0 4px;
+  border-top: 1px solid var(--hub-line);
+}
+
+.hub-error:empty {
+  display: none;
+}
+
+.hub-error {
+  padding: 0;
+  color: var(--hub-text);
+}
+
+/* ── Inside the island (views/settings.ts) ──────────────────────────────────
+   The window these pages lived in is gone; what its own stylesheet gave them
+   is here, scoped to the settings' root so the island is untouched. */
+
+.hub-root {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  font: 400 13px/1.45 var(--font);
+  color: var(--hub-text);
+}
+
+.hub-root .spacer {
+  flex: 1 1 auto;
+}
+
+/* The window's base rules, at the lowest priority (:where) as they had there:
+   every class rule of the pages still wins over them. */
+:where(.hub-root) button {
+  font: 500 12.5px var(--font);
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--hub-text);
+  cursor: default;
+  transition: background 0.14s, transform 0.08s;
+}
+
+:where(.hub-root) button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+:where(.hub-root) button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+:where(.hub-root) button:disabled {
+  opacity: 0.45;
+}
+
+:where(.hub-root) select {
+  font: 400 12.5px var(--font);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--hub-line);
+  border-radius: 8px;
+  color: var(--hub-text);
+  padding: 5px 8px;
+}
+
+:where(.hub-root) select:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+:where(.hub-root) input::placeholder,
+:where(.hub-root) textarea::placeholder {
+  color: var(--hub-muted);
+}
+
+:where(.hub-root) * {
+  box-sizing: border-box;
+}
+
+.hub-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.hub-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--hub-text);
+}
+
+.hub-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--hub-text);
+  font: 600 14px var(--font);
+  padding: 4px 8px 4px 2px;
+  border-radius: 8px;
+}
+
+.hub-back:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.hub-back svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  transform: rotate(180deg);
+}
